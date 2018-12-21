@@ -2,7 +2,7 @@ var fs = require("fs");
 var readimage = require("readimage");
 var sharp = require("sharp");
 var PNG = require('png-js');
-var ping = require('ping');
+var ping = require ("net-ping");
 
 var FILENAME = process.argv[2];
 async function start() {
@@ -11,6 +11,7 @@ async function start() {
 
 
 function determineSizes() {
+    console.log('Starting to determine correct sizes...');
     var filedata = fs.readFileSync(FILENAME)
 
 
@@ -54,6 +55,7 @@ function determineSizes() {
 }
 
 function buildPingData(dimensions) {
+    console.log('Building pingData...');
     PNG.decode(FILENAME, function (pixels) {
         const arr = [...pixels];
         let colors = [];
@@ -71,17 +73,25 @@ function buildPingData(dimensions) {
                 colorIndex++;
             }
         }
+        console.log('Done building pingData!');
 
         pingHosts(pixelMap);
     });
 }
 
 function pingHosts(pixelMap) {
+    console.log('Pinging hosts...');
+    var session = ping.createSession ();
 
     pixelMap.forEach(function (host) {
-        ping.sys.probe(host, function (isAlive) {
-            var msg = isAlive ? 'host ' + host + ' is alive' : 'host ' + host + ' is dead';
-            console.log(msg);
+        session.pingHost (host, function (error, target) {
+            if (error)
+                if (error instanceof ping.RequestTimedOutError)
+                    console.log (target + ": Not alive");
+                else
+                    console.log (target + ": " + error.toString ());
+            else
+                console.log (target + ": Alive");
         });
     });
 }
