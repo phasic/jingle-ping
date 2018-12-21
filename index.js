@@ -2,7 +2,7 @@ var fs = require("fs");
 var readimage = require("readimage");
 var sharp = require("sharp");
 var PNG = require('png-js');
-var ping = require ("net-ping");
+var ping = require("net-ping");
 
 var FILENAME = process.argv[2];
 async function start() {
@@ -25,8 +25,10 @@ function determineSizes() {
         let d = { width: image.width, height: image.height };
         if (d.width > 160) {
             console.log('Width too big, resizing...');
-            d = { width: 160, height: Math.floor(image.height * (160 / image.width)) };
-
+            d = { width: 160, height: Math.floor(d.height * (160 / d.width)) };
+            if (d.height > 120) {
+                d = { width: Math.floor(d.width * (120 / d.height)), height: 120 };
+            }
             sharp(FILENAME)
                 .resize(d.width, d.height)
                 .toFile("d" + FILENAME).then(() => {
@@ -38,8 +40,10 @@ function determineSizes() {
             return
         } else if (d.height > 120) {
             console.log('Height too big, resizing...');
-
             d = { width: Math.floor(image.width * (120 / image.height)), height: 120 };
+            if (d.width > 160) {
+                d = { width: 160, height: Math.floor(d.height * (160 / d.width)) };
+            }
             sharp(FILENAME)
                 .resize(d.width, d.height)
                 .toFile("d" + FILENAME).then(() => {
@@ -81,21 +85,31 @@ function buildPingData(dimensions) {
 
 function pingHosts(pixelMap) {
     console.log('Pinging hosts...');
-    var session = ping.createSession ();
-
-    pixelMap.forEach(function (host) {
-        session.pingHost (host, function (error, target) {
-            if (error)
-                if (error instanceof ping.RequestTimedOutError)
-                    console.log (target + ": Not alive");
-                else
-                    console.log (target + ": " + error.toString ());
-            else
-                console.log (target + ": Alive");
-        });
+    var file = 'a.txt';
+    console.log('Clearing file...');
+    fs.truncate(file, 0, function(){
+        console.log('Writing to file...');
+        pixelMap.forEach((host, i, arr) => {
+            fs.appendFile(file, host + "\n", function (err) {
+                if (err) return console.log(err);
+                // console.log('successfully appended "' + host + '"');
+    
+                if (i === arr.length - 1) {
+                    console.log('Starting to ping...');
+                    var cmd = require('node-cmd');
+                    cmd.get(
+                        'fping < a.txt --ipv6',
+                        function (err, data, stderr) {
+                            console.log('err :', err);
+                            console.log('stderr :', stderr);
+                            console.log('data :', data);
+                        }
+                    );
+                }
+            });
+        });    
+    
     });
 }
-
-
 
 start();
