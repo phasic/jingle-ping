@@ -3,6 +3,12 @@ var readimage = require("readimage");
 var sharp = require("sharp");
 var PNG = require('png-js');
 var ping = require("net-ping");
+//160 120
+const WIDTH = 40;
+const HEIGHT = 30;
+
+const XOFFSET = 0;
+const YOFFSET = 90;
 
 var FILENAME = process.argv[2];
 async function start() {
@@ -23,11 +29,11 @@ function determineSizes() {
         }
 
         let d = { width: image.width, height: image.height };
-        if (d.width > 160) {
+        if (d.width > WIDTH) {
             console.log('Width too big, resizing...');
-            d = { width: 160, height: Math.floor(d.height * (160 / d.width)) };
-            if (d.height > 120) {
-                d = { width: Math.floor(d.width * (120 / d.height)), height: 120 };
+            d = { width: WIDTH, height: Math.floor(d.height * (WIDTH / d.width)) };
+            if (d.height > HEIGHT) {
+                d = { width: Math.floor(d.width * (HEIGHT / d.height)), height: HEIGHT };
             }
             sharp(FILENAME)
                 .resize(d.width, d.height)
@@ -38,11 +44,11 @@ function determineSizes() {
 
                 });
             return
-        } else if (d.height > 120) {
+        } else if (d.height > HEIGHT) {
             console.log('Height too big, resizing...');
-            d = { width: Math.floor(image.width * (120 / image.height)), height: 120 };
-            if (d.width > 160) {
-                d = { width: 160, height: Math.floor(d.height * (160 / d.width)) };
+            d = { width: Math.floor(image.width * (HEIGHT / image.height)), height: HEIGHT };
+            if (d.width > WIDTH) {
+                d = { width: WIDTH, height: Math.floor(d.height * (WIDTH / d.width)) };
             }
             sharp(FILENAME)
                 .resize(d.width, d.height)
@@ -73,7 +79,7 @@ function buildPingData(dimensions) {
 
         for (let r = 0; r < dimensions.height; r++) {
             for (let c = 0; c < dimensions.width; c++) {
-                pixelMap[colorIndex] = ['2001:4c08:2028', c, r, colors[colorIndex]].join(':');
+                pixelMap[colorIndex] = ['2001:4c08:2028', c + XOFFSET, r + YOFFSET, colors[colorIndex]].join(':');
                 colorIndex++;
             }
         }
